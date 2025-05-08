@@ -1,8 +1,9 @@
 import torch
 from torch.autograd.functional import hessian as torch_hessian
+from nequip_saddle.sirqit import sirqit
 
 class NNSaddleFinder:
-    def __init__(self, potential, initial_x, grad_fn = None, saddle_index=None, step_size=0.01, momentum=0.8, device='cpu'):
+    def __init__(self, potential, initial_x, grad_fn = None, saddle_index=None, step_size=0.01, momentum=0.8, device='cpu', eigsolver='AD'):
         """
         Initialize the saddle finder.
 
@@ -22,6 +23,8 @@ class NNSaddleFinder:
         self.step_size = step_size
         self.momentum = momentum
         self.device = device
+        assert eigsolver in ['AD', 'SIRQIT'], "eigsolver must be either 'AD' or 'SIRQIT'"
+        self.eigsolver = eigsolver
 
     def gradient(self, x):
         """ Compute the gradient using PyTorch autograd. """
@@ -56,9 +59,19 @@ class NNSaddleFinder:
         grad, = torch.autograd.grad(E, x, create_graph=True)
         return grad
 
-    def eigen_vals_vecs(self, hessian):
+    def eigen_vals_vecs(self, hessian): # AD method
         """Computes eigenvectors corresponding to smallest eigenvalues."""
         eigvals, eigvecs = torch.linalg.eigh(hessian)
+        return eigvals, eigvecs
+    
+    def sirqit_eigen_vals_vecs(self, prev_eigvecs=None): # SIRQIT method
+        """Computes eigenvectors corresponding to smallest eigenvalues."""
+        
+        if prev_eigvecs is not None:
+            V0 = torch.cat([prev_eigvecs, V0], dim=1)
+        else:
+            V0 = torch.randn(self.x.shape[0], self.saddle_index, dtype=torch.float32)
+        eigvals, eigvecs = sirqit(self.grad_potential, self.x, V0, self.saddle_index)
         return eigvals, eigvecs
 
     def step(self, eigenvalue_threshold=1e-3):
@@ -70,8 +83,14 @@ class NNSaddleFinder:
             eigenvalue_threshold (float): Threshold below which eigenvalue directions are ignored.
         """
         with torch.enable_grad():
-            hessian = self.hessian(self.x)
-            eigvals, eigvecs = self.eigen_vals_vecs(hessian)
+            if self.eigsolver == 'AD':
+                hessian = self.hessian(self.x)
+                eigvals, eigvecs = self.eigen_vals_vecs(hessian)
+            elif self.eigsolver == 'SIRQIT':
+                try:
+                    eigvals, eigvecs = self.sirqit_eigen_vals_vecs(hessian, prev_eigvecs = eigvecs)
+                except:
+                    eigvals, eigvecs = self.sirqit_eigen_vals_vecs(hessian, prev_eigvecs = None)
             
             # Filter eigenvectors based on the eigenvalue threshold
             significant_indices = torch.where(eigvals.abs() >= eigenvalue_threshold)[0]
