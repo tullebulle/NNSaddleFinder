@@ -9,7 +9,7 @@ The NequIP models are already trained, and will be loaded through the `function_
 
 ## NNSaddleFinder
 
-The `NNSaddleFinder` class is designed to locate saddle points in a potential energy landscape using a neural network approach. It leverages PyTorch for automatic differentiation and Hessian computation. The class is initialized with a potential function, an initial guess for the saddle point, and optional parameters such as a gradient function, saddle index, step size, momentum, and device type (CPU or GPU).
+The `NNSaddleFinder` class is designed to locate saddle points in a potential energy landscape using a neural network approach. It leverages PyTorch for automatic differentiation . The class is initialized with a potential function, an initial guess for the saddle point, and optional parameters such as a gradient function, saddle index, step size, momentum, and device type (CPU or GPU).
 
 ### Key Methods:
 - `gradient(x)`: Computes the gradient of the potential at a given point `x`.

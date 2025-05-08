@@ -55,8 +55,11 @@ class NNSaddleFinder:
 
     def grad_potential(self, x):
         """Computes gradient using AD."""
-        E = self.potential(x)
-        grad, = torch.autograd.grad(E, x, create_graph=True)
+        if self.grad_fn is None:
+            E = self.potential(x)
+            grad, = torch.autograd.grad(E, x, create_graph=True)
+        else:
+            grad = self.grad_fn(x)
         return grad
 
     def eigen_vals_vecs(self, hessian): # AD method
