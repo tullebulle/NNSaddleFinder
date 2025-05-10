@@ -1,0 +1,16 @@
+AtomicData_options:
+  r_max: 4.0
+dtype: torch.float64
+file_name: ./benchmark_data/rxn0015-train.npz
+include_frames: null
+include_keys: []
+key_mapping:
+  E: total_energy
+  F: forces
+  R: pos
+  z: atomic_numbers
+nequip_version: 0.6.2
+npz_fixed_field_keys:
+- atomic_numbers
+root: results/rxn0015
+url: null
